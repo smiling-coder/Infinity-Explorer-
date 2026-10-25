@@ -1,326 +1,101 @@
-/* ==========================================
-   INFINITY EXPLORER
-   CINEMATIC SCROLL CONTROLLER
-========================================== */
+// ======================================
+// INFINITY EXPLORER — CINEMATIC SCROLL
+// ======================================
 
-(() => {
-
-    "use strict";
-
-    if (!window.gsap || !window.ScrollTrigger) {
-
-        console.error(
-            "GSAP or ScrollTrigger could not be loaded."
-        );
-
+document.addEventListener("DOMContentLoaded", () => {
+    if (!window.THREE || !window.gsap || !window.ScrollTrigger) {
+        console.error("Three.js or GSAP failed to load.");
         return;
-
-    }
-
-    if (!window.InfinitySpace) {
-
-        console.error(
-            "The Three.js cinematic engine is unavailable."
-        );
-
-        return;
-
     }
 
     gsap.registerPlugin(ScrollTrigger);
 
-    const space = window.InfinitySpace;
+    const canvas = document.querySelector("#space-canvas");
 
-    const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    const progressBar = document.getElementById(
-        "scroll-progress"
-    );
-
-    const indicator = document.getElementById(
-        "scroll-indicator"
-    );
-
-    /* SCROLL PROGRESS BAR */
-
-    gsap.to(progressBar, {
-
-        width: "100%",
-
-        ease: "none",
-
-        scrollTrigger: {
-
-            trigger: ".cinematic-content",
-
-            start: "top top",
-
-            end: "bottom bottom",
-
-            scrub: true
-
-        }
-
-    });
-
-    /* INTRO TEXT */
-
-    if (!reduceMotion) {
-
-        gsap.from("#begin .scene-inner", {
-
-            opacity: 0,
-
-            y: 70,
-
-            duration: 1.5,
-
-            ease: "power3.out",
-
-            delay: 0.4
-
-        });
-
+    if (!canvas) {
+        console.error("Missing #space-canvas in index.html");
+        return;
     }
 
-    /* SCENE TRANSITIONS */
-
-    const scenes = document.querySelectorAll(
-        "[data-scene]"
-    );
-
-    scenes.forEach(section => {
-
-        const sceneName = section.dataset.scene;
-
-        ScrollTrigger.create({
-
-            trigger: section,
-
-            start: "top center",
-
-            end: "bottom center",
-
-            onEnter: () => {
-
-                space.setScene(sceneName);
-
-                if (indicator) {
-
-                    indicator.style.opacity =
-                        sceneName === "final" ? "0" : "1";
-
-                }
-
-            },
-
-            onEnterBack: () => {
-
-                space.setScene(sceneName);
-
-                if (indicator) {
-
-                    indicator.style.opacity =
-                        sceneName === "final" ? "0" : "1";
-
-                }
-
-            }
-
-        });
-
-    });
-
-    /* CINEMATIC CAMERA MOVEMENT */
-
-    const cameraTimeline = gsap.timeline({
-
-        scrollTrigger: {
-
-            trigger: ".cinematic-content",
-
-            start: "top top",
-
-            end: "bottom bottom",
-
-            scrub: 1.5,
-
-            invalidateOnRefresh: true
-
-        }
-
-    });
-
-    const cameraSequence = [
-
-        "sun",
-
-        "mercury",
-
-        "venus",
-
-        "earth",
-
-        "mars",
-
-        "jupiter",
-
-        "saturn",
-
-        "uranus",
-
-        "neptune",
-
-        "final"
-
-    ];
-
-    cameraSequence.forEach((sceneName, index) => {
-
-        const target = space.cameraTargets[sceneName];
-
-        if (!target) return;
-
-        const destination = {
-
-            x: target.position[0],
-
-            y: target.position[1],
-
-            z: target.position[2],
-
-            lookX: target.lookAt[0],
-
-            lookY: target.lookAt[1],
-
-            lookZ: target.lookAt[2]
-
-        };
-
-        const proxy = { progress: 0 };
-
-        cameraTimeline.to(
-
-            proxy,
-
-            {
-
-                progress: 1,
-
-                duration: 1,
-
-                ease: "none",
-
-                onUpdate: () => {
-
-                    const progress = proxy.progress;
-
-                    space.camera.position.set(
-
-                        gsap.utils.interpolate(
-                            index === 0
-                                ? 0
-                                : cameraSequence[index - 1]
-                                    ? space.cameraTargets[
-                                        cameraSequence[index - 1]
-                                    ].position[0]
-                                    : 0,
-                            destination.x,
-                            progress
-                        ),
-
-                        gsap.utils.interpolate(
-                            index === 0
-                                ? 0
-                                : space.cameraTargets[
-                                    cameraSequence[index - 1]
-                                ].position[1],
-                            destination.y,
-                            progress
-                        ),
-
-                        gsap.utils.interpolate(
-                            index === 0
-                                ? 36
-                                : space.cameraTargets[
-                                    cameraSequence[index - 1]
-                                ].position[2],
-                            destination.z,
-                            progress
-                        )
-
-                    );
-
-                    space.camera.lookAt(
-
-                        destination.lookX,
-
-                        destination.lookY,
-
-                        destination.lookZ
-
-                    );
-
-                }
-
-            },
-
-            index
-
+    // Connect to the existing Three.js scene.
+    // These variables must be exposed by cinematic.js.
+    if (!window.spaceScene || !window.spaceCamera || !window.spacePlanets) {
+        console.error(
+            "Expose spaceScene, spaceCamera, and spacePlanets " +
+            "from cinematic.js before enabling cinematic scroll."
         );
-
-    });
-
-    /* SECTION TEXT REVEALS */
-
-    if (!reduceMotion) {
-
-        document.querySelectorAll(
-            ".scene-inner"
-        ).forEach((element, index) => {
-
-            if (element.closest("#begin")) return;
-
-            gsap.from(element.children, {
-
-                opacity: 0,
-
-                y: 35,
-
-                duration: 1,
-
-                stagger: 0.12,
-
-                ease: "power3.out",
-
-                scrollTrigger: {
-
-                    trigger: element,
-
-                    start: "top 75%",
-
-                    toggleActions: "play none none reverse"
-
-                }
-
-            });
-
-        });
-
+        return;
     }
 
-    /* INITIAL SCROLL POSITION */
+    const camera = window.spaceCamera;
+    const planets = window.spacePlanets;
 
-    window.addEventListener("load", () => {
+    // Camera starts far away from the planetary system.
+    camera.position.set(0, 2, 35);
 
-        ScrollTrigger.refresh();
-
+    // Cinematic scroll progression.
+    const timeline = gsap.timeline({
+        scrollTrigger: {
+            trigger: document.body,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1.5
+        }
     });
 
-    console.log(
-        "∞ Infinity Explorer: cinematic scroll controller initialized."
-    );
+    timeline
+        .to(camera.position, {
+            z: 22,
+            y: 3,
+            x: 2,
+            ease: "none"
+        }, 0)
 
-})();
+        .to(camera.position, {
+            z: 14,
+            y: 1,
+            x: -3,
+            ease: "none"
+        }, 0.25)
+
+        .to(camera.position, {
+            z: 8,
+            y: 2,
+            x: 3,
+            ease: "none"
+        }, 0.5)
+
+        .to(camera.position, {
+            z: 18,
+            y: 5,
+            x: 0,
+            ease: "none"
+        }, 0.75);
+
+    // Give each planet a different rotation speed.
+    planets.forEach((planet, index) => {
+        if (!planet) return;
+
+        gsap.to(planet.rotation, {
+            y: Math.PI * 2,
+            duration: 12 + index * 2,
+            repeat: -1,
+            ease: "none"
+        });
+
+        gsap.to(planet.position, {
+            y: planet.position.y + 0.35,
+            duration: 2 + index * 0.3,
+            yoyo: true,
+            repeat: -1,
+            ease: "sine.inOut"
+        });
+    });
+
+    // Refresh scroll measurements after layout changes.
+    window.addEventListener("load", () => {
+        ScrollTrigger.refresh();
+    });
+
+    console.log("Infinity Explorer cinematic scroll initialized.");
+});
