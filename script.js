@@ -1,3 +1,344 @@
+/* ==========================================
+   INFINITY EXPLORER
+   3D SCROLL EXPERIENCE
+========================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const cards = document.querySelectorAll(".planet-card");
+    const hero = document.querySelector(".hero");
+    const headings = document.querySelectorAll(".section-heading");
+
+    const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    /* --------------------------------------
+       1. PREPARE 3D PLANET CARDS
+    -------------------------------------- */
+
+    cards.forEach((card, index) => {
+
+        card.style.transformStyle = "preserve-3d";
+        card.style.transformOrigin = "center center";
+
+        card.style.setProperty(
+            "--planet-index",
+            index
+        );
+
+        card.style.opacity = "0";
+
+        card.style.transform = reduceMotion
+            ? "none"
+            : "perspective(1200px) translateY(60px) rotateX(8deg) scale(0.95)";
+
+        card.style.transition =
+            "opacity 0.8s ease, transform 0.8s ease";
+
+    });
+
+
+    /* --------------------------------------
+       2. SCROLL REVEAL ANIMATION
+    -------------------------------------- */
+
+    const revealObserver = new IntersectionObserver(
+        (entries, observer) => {
+
+            entries.forEach(entry => {
+
+                if (!entry.isIntersecting) return;
+
+                const card = entry.target;
+
+                card.style.opacity = "1";
+
+                card.style.transform = reduceMotion
+                    ? "none"
+                    : "perspective(1200px) translateY(0) rotateX(0deg) scale(1)";
+
+                observer.unobserve(card);
+
+            });
+
+        },
+        {
+            threshold: 0.12,
+            rootMargin: "0px 0px -40px 0px"
+        }
+    );
+
+    cards.forEach(card => revealObserver.observe(card));
+
+
+    /* --------------------------------------
+       3. SCROLL-BASED 3D TILT
+    -------------------------------------- */
+
+    if (!reduceMotion) {
+
+        let ticking = false;
+
+        function updatePlanetDepth() {
+
+            const viewportHeight = window.innerHeight;
+
+            cards.forEach((card, index) => {
+
+                const rect = card.getBoundingClientRect();
+
+                const cardCenter =
+                    rect.top + rect.height / 2;
+
+                const distanceFromCenter =
+                    (cardCenter - viewportHeight / 2) /
+                    (viewportHeight / 2);
+
+                const clampedDistance = Math.max(
+                    -1,
+                    Math.min(1, distanceFromCenter)
+                );
+
+                const rotateX = clampedDistance * -5;
+
+                const translateZ =
+                    (1 - Math.abs(clampedDistance)) * 16;
+
+                card.style.setProperty(
+                    "--scroll-depth",
+                    `${translateZ}px`
+                );
+
+                if (card.matches(":hover")) return;
+
+                card.style.transform = `
+                    perspective(1200px)
+                    translateY(0)
+                    translateZ(${translateZ}px)
+                    rotateX(${rotateX}deg)
+                    scale(1)
+                `;
+
+            });
+
+            ticking = false;
+
+        }
+
+        window.addEventListener(
+            "scroll",
+            () => {
+
+                if (!ticking) {
+
+                    window.requestAnimationFrame(
+                        updatePlanetDepth
+                    );
+
+                    ticking = true;
+
+                }
+
+            },
+            { passive: true }
+        );
+
+    }
+
+
+    /* --------------------------------------
+       4. MOUSE-BASED 3D INTERACTION
+    -------------------------------------- */
+
+    const supportsHover = window.matchMedia(
+        "(hover: hover) and (pointer: fine)"
+    ).matches;
+
+    if (supportsHover && !reduceMotion) {
+
+        cards.forEach(card => {
+
+            card.addEventListener("pointermove", event => {
+
+                const rect = card.getBoundingClientRect();
+
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateY =
+                    ((x - centerX) / centerX) * 5;
+
+                const rotateX =
+                    ((centerY - y) / centerY) * 5;
+
+                card.style.transform = `
+                    perspective(1200px)
+                    translateY(-8px)
+                    rotateX(${rotateX}deg)
+                    rotateY(${rotateY}deg)
+                    scale(1.02)
+                `;
+
+            });
+
+            card.addEventListener("pointerleave", () => {
+
+                card.style.transform = "";
+
+            });
+
+        });
+
+    }
+
+
+    /* --------------------------------------
+       5. HERO PARALLAX EFFECT
+    -------------------------------------- */
+
+    if (hero && !reduceMotion) {
+
+        let heroTicking = false;
+
+        window.addEventListener(
+            "scroll",
+            () => {
+
+                if (heroTicking) return;
+
+                heroTicking = true;
+
+                requestAnimationFrame(() => {
+
+                    const scrollY = window.scrollY;
+
+                    if (scrollY < window.innerHeight) {
+
+                        hero.style.backgroundPosition =
+                            `center ${scrollY * 0.25}px`;
+
+                    }
+
+                    heroTicking = false;
+
+                });
+
+            },
+            { passive: true }
+        );
+
+    }
+
+
+    /* --------------------------------------
+       6. SECTION HEADING REVEAL
+    -------------------------------------- */
+
+    const headingObserver = new IntersectionObserver(
+        (entries, observer) => {
+
+            entries.forEach(entry => {
+
+                if (!entry.isIntersecting) return;
+
+                const heading = entry.target;
+
+                heading.animate(
+                    [
+                        {
+                            opacity: 0,
+                            transform: reduceMotion
+                                ? "none"
+                                : "translateY(25px)"
+                        },
+                        {
+                            opacity: 1,
+                            transform: "translateY(0)"
+                        }
+                    ],
+                    {
+                        duration: reduceMotion ? 0 : 700,
+                        easing: "ease-out",
+                        fill: "both"
+                    }
+                );
+
+                observer.unobserve(heading);
+
+            });
+
+        },
+        {
+            threshold: 0.2
+        }
+    );
+
+    headings.forEach(heading => {
+        headingObserver.observe(heading);
+    });
+
+
+    /* --------------------------------------
+       7. ACTIVE SCROLL STATUS
+    -------------------------------------- */
+
+    const navLinks = document.querySelectorAll(
+        'nav a[href^="#"]'
+    );
+
+    const sections = document.querySelectorAll(
+        "header[id], section[id]"
+    );
+
+    const sectionObserver = new IntersectionObserver(
+        entries => {
+
+            entries.forEach(entry => {
+
+                if (!entry.isIntersecting) return;
+
+                navLinks.forEach(link => {
+
+                    const isActive =
+                        link.getAttribute("href") ===
+                        `#${entry.target.id}`;
+
+                    if (isActive) {
+                        link.style.color = "#67e8f9";
+                    } else {
+                        link.style.color = "";
+                    }
+
+                });
+
+            });
+
+        },
+        {
+            threshold: 0.35
+        }
+    );
+
+    sections.forEach(section => {
+        sectionObserver.observe(section);
+    });
+
+
+    /* --------------------------------------
+       8. FINISH
+    -------------------------------------- */
+
+    console.log(
+        "🌌 Infinity Explorer 3D Scroll Experience Activated!"
+    );
+
+});
+
+
 // ---- Edit the planets here: name, topic, text, tags, colour, type ----
 const USE_IMAGES=false; // set true on GitHub Pages after adding real photos in a /textures folder
 const PLANETS=[
