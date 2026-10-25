@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Infinity Explorer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="space"></canvas>
+<div id="scroller"></div>
+<div class="hud" id="prog"></div>
+<div class="hud" id="title"><h1>Infinity Explorer</h1><p id="loc">The Solar System</p></div>
+<div class="hud" id="hint">Scroll to travel ↓</div>
+<div class="hud" id="panel"><small id="pk"></small><h2 id="pn"></h2><p id="pd"></p><ul id="pt"></ul></div>
+<nav class="hud" id="map" aria-label="Cosmic map"></nav>
+<div id="err">Your browser could not start WebGL, so the 3D universe can’t load.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
